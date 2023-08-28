@@ -10,15 +10,16 @@ import { sampleNFTAddress } from "@/lib/contract";
 import { ERC721EnumerableInterfaceID } from "@/lib/constant";
 import { ethers } from "ethers";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-
+import { useEthersSigner } from "@/hooks/useEthers";
 import { erc721EnumerableAbi } from "@/lib/abi";
 
 import { createPublicClient, http } from "viem";
 import { bscTestnet } from "wagmi/chains";
 import { opBNBTestnet } from "@/lib/network";
-import { greenfieldClient } from "@/lib/greenfield";
+import { client } from "@/lib/greenfield/utils/client";
 import { useAccount } from "wagmi";
 import { FileHandler } from "@bnb-chain/greenfiled-file-handle";
+import { getOffchainAuthKeys } from "@/lib/greenfield/utils/offchainAuth";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -37,7 +38,7 @@ export default function Home() {
   const { debug, isDebugStarted, logTitle, logs } = useDebug();
   const { toast, showToast } = useToast();
   const { isConnected } = useIsConnected();
-  const { address: userAddress } = useAccount();
+  const { address: userAddress, connector } = useAccount();
 
   const [chainId, setChainId] = useState(97);
   const [nftAddress, setNFTAddress] = useState(sampleNFTAddress);
@@ -46,6 +47,8 @@ export default function Home() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [migrationResultURL, setMigrationResultURL] = useState("");
+
+  const signer = useEthersSigner();
 
   const handleClickFetchNFTData = async () => {
     try {
@@ -133,6 +136,7 @@ export default function Home() {
       debug.log("Done!");
       setNftData(nftData);
     } catch (e: any) {
+      console.error(e);
       showToast({ message: e.message });
     } finally {
       debug.end();
@@ -164,7 +168,6 @@ export default function Home() {
           console.error(`Failed to fetch from IPFS: ${ipfsUri}`);
           continue; // Move to the next URI
         }
-        console.log(response);
         const content = await response.blob();
         const newUri = await uploadBlobToStorage(content);
         if (newUri) {
@@ -188,11 +191,16 @@ export default function Home() {
       debug.log("uploadNFTDataToStorage");
       const url = await uploadNFTDataToStorage(mutableNFTData);
 
+      if (!url) {
+        throw new Error("Failed to upload NFT data to storage");
+      }
+
       debug.log("url", url);
       setMigrationResultURL(url);
       setIsModalOpen(true);
       debug.log("Done!");
     } catch (e: any) {
+      console.error(e);
       showToast({ message: e.message });
     } finally {
       debug.end();
@@ -204,9 +212,16 @@ export default function Home() {
   };
 
   const uploadNFTDataToStorage = async (nftData: NFT[]) => {
-    if (!userAddress) {
+    if (!userAddress || !connector) {
       throw new Error("Please connect your wallet");
     }
+    const provider = await connector?.getProvider();
+    const offChainData = await getOffchainAuthKeys(userAddress, provider);
+    if (!offChainData) {
+      alert("No offchain, please create offchain pairs first");
+      return;
+    }
+    console.log("offChainData", offChainData);
 
     const bucketName = "test-for-create-bucket";
     const objectName = "test";
@@ -229,28 +244,18 @@ export default function Home() {
 
     const bytes = await fileToUint8Array(file);
     const { contentLength, expectCheckSums } = await FileHandler.getPieceHashRoots(bytes);
-    console.log(result);
+    // console.log(result);
 
-    const createObjectTx = await greenfieldClient.object.createObject(
-      {
-        bucketName: bucketName,
-        objectName: objectName,
-        creator: userAddress,
-        visibility: "VISIBILITY_TYPE_PUBLIC_READ",
-        fileType: file.type,
-        redundancyType: "REDUNDANCY_EC_TYPE",
-        contentLength,
-        expectCheckSums: JSON.parse(expectCheckSums),
-      },
-      // {
-      //   type: "EDDSA",
-      //   domain: window.location.origin,
-      //   seed: offChainData.seedString,
-      //   address,
-      //   // type: 'ECDSA',
-      //   // privateKey: ACCOUNT_PRIVATEKEY,
-      // },
-    );
+    // const createObjectTx = await client.object.createObject({
+    //   bucketName: bucketName,
+    //   objectName: objectName,
+    //   creator: userAddress,
+    //   visibility: "VISIBILITY_TYPE_PUBLIC_READ",
+    //   fileType: file.type,
+    //   redundancyType: "REDUNDANCY_EC_TYPE",
+    //   contentLength,
+    //   expectCheckSums: JSON.parse(expectCheckSums),
+    // });
 
     return "http://localhost:3000";
   };

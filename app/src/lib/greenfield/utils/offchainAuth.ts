@@ -1,17 +1,14 @@
-import { client, getAllSps } from '@/client';
-import { GREEN_CHAIN_ID } from '@/config/env';
-import { IReturnOffChainAuthKeyPairAndUpload } from '@bnb-chain/greenfield-js-sdk';
+import { client, getAllSps } from "./client";
 
-/**
- * generate off-chain auth key pair and upload public key to sp
- */
+import { IReturnOffChainAuthKeyPairAndUpload } from "@bnb-chain/greenfield-js-sdk";
+
 export const getOffchainAuthKeys = async (address: string, provider: any) => {
   const storageResStr = localStorage.getItem(address);
 
   if (storageResStr) {
     const storageRes = JSON.parse(storageResStr) as IReturnOffChainAuthKeyPairAndUpload;
     if (storageRes.expirationTime < Date.now()) {
-      alert('Your auth key has expired, please generate a new one');
+      alert("Your auth key has expired, please generate a new one");
       return;
     }
 
@@ -22,7 +19,7 @@ export const getOffchainAuthKeys = async (address: string, provider: any) => {
   const offchainAuthRes = await client.offchainauth.genOffChainAuthKeyPairAndUpload(
     {
       sps: allSps,
-      chainId: GREEN_CHAIN_ID,
+      chainId: Number(process.env.NEXT_PUBLIC_GREEN_CHAIN_ID),
       expirationMs: 5 * 24 * 60 * 60 * 1000,
       domain: window.location.origin,
       address,

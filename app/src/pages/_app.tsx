@@ -9,6 +9,9 @@ import { bscTestnet } from "wagmi/chains";
 import { publicProvider } from "wagmi/providers/public";
 import { opBNBTestnet, greenFieldMekongTestnet } from "@/lib/network";
 
+import { getEddsaCompressedPublicKey } from "@bnb-chain/greenfield-zk-crypto";
+import { useEffect } from "react";
+
 const { chains, publicClient } = configureChains(
   [bscTestnet, opBNBTestnet, greenFieldMekongTestnet],
   [publicProvider()],
@@ -27,6 +30,10 @@ const wagmiConfig = createConfig({
 });
 
 export default function App({ Component, pageProps }: AppProps) {
+  useEffect(() => {
+    (window as any).getEddsaCompressedPublicKey = getEddsaCompressedPublicKey;
+  }, []);
+
   return (
     <WagmiConfig config={wagmiConfig}>
       <RainbowKitProvider chains={chains.filter((chain) => chain.id === 5600)}>
