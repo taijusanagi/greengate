@@ -7,6 +7,7 @@ export const client = Client.create(
 
 export const getSps = async () => {
   const sps = await client.sp.getStorageProviders();
+    console.log(sps)
   const finalSps = (sps ?? []).filter((v: any) => v.endpoint.includes("nodereal"));
 
   return finalSps;
