@@ -69,14 +69,13 @@ export default function Home() {
   }
 
   return (
-    <main className={`${inter.className} min-h-screen flex flex-col bg-gray-100 p-5`}>
-      <header className="flex justify-between items-center mb-8 px-4 py-2 bg-gray-100 rounded-lg shadow-md">
-        <p className="font-semibold">GreenGate</p>
-        <button className="bg-gray-200 px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition">
+    <main className={`${inter.className} min-h-screen flex flex-col bg-main p-5`}>
+      <header className="flex justify-end items-center mb-8 px-4 py-2 bg-gray-100 rounded-lg shadow-md bg-sub">
+        <button className="bg-gray-200 px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition btn-main">
           Connect Wallet
         </button>
       </header>
-      <div className="max-w-2xl w-full mx-auto p-5 bg-gray-100 rounded-lg shadow-md mb-8">
+      <div className="max-w-2xl w-full mx-auto p-5 bg-gray-100 rounded-lg shadow-md mb-8 bg-sub">
         <div className="flex flex-col space-y-4">
           <div className="space-y-2">
             <label htmlFor="network" className="block font-medium text-gray-600">
@@ -84,7 +83,7 @@ export default function Home() {
             </label>
             <select
               id="network"
-              className="bg-gray-200 p-2 w-full rounded-lg border-2 border-gray-300 focus:border-gray-400 outline-none"
+              className="bg-gray-200 p-2 w-full rounded-lg border-2 border-gray-300 focus:border-gray-400 outline-none input-form"
               value={network}
               onChange={(e) => setNetwork(e.target.value)}
             >
@@ -98,7 +97,7 @@ export default function Home() {
             </label>
             <input
               id="address"
-              className="bg-gray-200 p-2 w-full rounded-lg border-2 border-gray-300 focus:border-gray-400 outline-none"
+              className="bg-gray-200 p-2 w-full rounded-lg border-2 border-gray-300 focus:border-gray-400 outline-none input-form"
               type="text"
               placeholder="Enter NFT Contract Address"
               value={nftAddress}
@@ -108,13 +107,14 @@ export default function Home() {
           <div className="space-y-2">
             <button
               type="submit"
-              className="bg-gray-200 text-gray-600 p-2 w-full rounded-lg shadow-md hover:shadow-lg transition"
+              className="bg-gray-200 text-gray-600 p-2 w-full rounded-lg shadow-md hover:shadow-lg transition btn-main"
               onClick={handleClickFetchNFTData}
+              disabled={!nftAddress.length}
             >
               Fetch NFT Data
             </button>
             <button
-              className="bg-gray-200 text-gray-600 p-2 w-full rounded-lg mt-2 shadow-md hover:shadow-lg transition"
+              className="bg-gray-200 text-gray-600 p-2 w-full rounded-lg mt-2 shadow-md hover:shadow-lg transition btn-main"
               onClick={handleMigrate}
               disabled={nftData.length == 0}
             >
@@ -124,19 +124,19 @@ export default function Home() {
         </div>
       </div>
       {nftData.length > 0 && (
-        <div className="max-w-7xl w-full mx-auto p-5 bg-gray-100 rounded-lg shadow-md">
+        <div className="max-w-7xl w-full mx-auto p-5 bg-gray-100 rounded-lg shadow-md bg-sub">
           <table className="w-full mt-5 bg-white rounded-lg shadow-sm">
             <thead>
               <tr>
-                <th className="p-2 bg-gray-100 border-b-2 w-1/6">ID</th> {/* Adjusted width */}
-                <th className="p-2 bg-gray-100 border-b-2">Metadata</th>
+                <th className="p-2 bg-gray-100 border-b-2 w-1/6 font-medium text-gray-600">Token ID</th>
+                <th className="p-2 bg-gray-100 border-b-2 font-medium text-gray-600">Metadata</th>
               </tr>
             </thead>
             <tbody>
               {nftData.map((nft) => (
                 <tr key={nft.tokenId}>
-                  <td className="p-2 border-b border-gray-200">{nft.tokenId}</td>
-                  <td className="p-2 border-b border-gray-200 whitespace-pre-wrap font-mono text-xs bg-gray-50">
+                  <td className="p-2 border-b border-gray-200 text-gray-600">{nft.tokenId}</td>
+                  <td className="p-2 border-b border-gray-200 whitespace-pre-wrap font-mono text-xs bg-gray-50 text-gray-600">
                     {nft.metadata && renderHighlightedJSON(nft.metadata)}
                   </td>
                 </tr>
@@ -159,7 +159,7 @@ export default function Home() {
             </div>
             <div className="flex justify-end">
               <button
-                className="bg-gray-200 text-gray-700 p-2 rounded-lg mt-2 shadow-md hover:shadow-lg transition"
+                className="bg-gray-200 text-gray-700 p-2 rounded-lg mt-2 shadow-md hover:shadow-lg transition btn-main"
                 onClick={() => {
                   setNftData([]);
                   setNFTAddress("");
