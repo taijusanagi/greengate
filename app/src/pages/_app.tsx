@@ -7,8 +7,12 @@ import { getDefaultWallets, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { configureChains, createConfig, WagmiConfig } from "wagmi";
 import { bscTestnet } from "wagmi/chains";
 import { publicProvider } from "wagmi/providers/public";
+import { opBNBTestnet } from "@/lib/network";
 
-const { chains, publicClient } = configureChains([bscTestnet], [publicProvider()]);
+const { chains, publicClient } = configureChains(
+  [bscTestnet, { ...opBNBTestnet, iconUrl: "/op_bnb.png" }],
+  [publicProvider()],
+);
 
 const { connectors } = getDefaultWallets({
   appName: "GreenGate",

@@ -108,10 +108,10 @@ export default function Home() {
 
   return (
     <main
-      className={`${inter.className} min-h-screen flex flex-col bg-gradient-to-br from-yellow-200 to-green-400 p-5`}
+      className={`${inter.className} min-h-screen flex flex-col bg-gradient-to-br from-yellow-200 to-green-400 p-2`}
     >
       {isDebugStarted && (
-        <div className="fixed top-0 left-0 w-full h-screen bg-black bg-opacity-50 flex flex-col items-center justify-center z-50">
+        <div className="fixed top-0 left-0 w-full h-screen bg-black bg-opacity-50 flex flex-col items-center justify-center z-50 p-2">
           <div className="max-w-lg w-full bg-black p-4 rounded-lg shadow-2xl break-all">
             <div className="flex justify-between items-center text-white text-sm align-left mb-2">
               {logTitle ? `Logs for ${logTitle}` : "Logs"} <FaSpinner className="text-white text-sm animate-spin" />
@@ -135,9 +135,9 @@ export default function Home() {
       )}
       <header className="flex justify-between items-center mb-8 px-4 py-2 bg-gray-100 rounded-lg shadow-md bg-sub">
         <h1 className="header-logo">GreenGate</h1>
-        <ConnectButton accountStatus={"address"} showBalance={false} />
+        <ConnectButton accountStatus={"address"} showBalance={false} chainStatus={"icon"} />
       </header>
-      <div className="max-w-2xl w-full mx-auto p-5 bg-gray-100 rounded-lg shadow-md mb-8 bg-sub">
+      <div className="max-w-2xl w-full mx-auto p-4 bg-gray-100 rounded-lg shadow-md mb-8 bg-sub">
         <div className="flex flex-col space-y-4">
           <div className="space-y-2">
             <label htmlFor="network" className="block font-medium text-gray-600">
@@ -208,7 +208,7 @@ export default function Home() {
         </div>
       )}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2">
           <div className="bg-gray-100 p-5 rounded-lg shadow-lg space-y-4 max-w-lg w-full">
             <div>
               <h2 className="text-lg font-semibold mb-8">Migration Result</h2>
