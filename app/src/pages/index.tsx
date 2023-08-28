@@ -83,7 +83,7 @@ export default function Home() {
 
       jsx.push(<span key={lastIndex}>{preText}</span>);
       jsx.push(
-        <span key={match.index} className="bg-yellow-300">
+        <span key={match.index} className="bg-yellow-200">
           {matchedText}
         </span>
       );
@@ -107,7 +107,9 @@ export default function Home() {
   }, [isDebugStarted, isModalOpen]);
 
   return (
-    <main className={`${inter.className} min-h-screen flex flex-col bg-main p-5`}>
+    <main
+      className={`${inter.className} min-h-screen flex flex-col bg-gradient-to-br from-yellow-200 to-green-400 p-5`}
+    >
       {isDebugStarted && (
         <div className="fixed top-0 left-0 w-full h-screen bg-black bg-opacity-50 flex flex-col items-center justify-center z-50">
           <div className="max-w-lg w-full bg-black p-4 rounded-lg shadow-2xl break-all">
