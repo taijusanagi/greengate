@@ -85,7 +85,7 @@ export default function Home() {
       jsx.push(
         <span key={match.index} className="bg-yellow-200">
           {matchedText}
-        </span>
+        </span>,
       );
 
       lastIndex = match.index + matchedText.length;
