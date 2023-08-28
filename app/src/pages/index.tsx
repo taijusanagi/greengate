@@ -1,7 +1,11 @@
 import { Inter } from "next/font/google";
-import { useState } from "react";
+import { FaSpinner } from "react-icons/fa";
+
+import { useEffect, useState } from "react";
 
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useDebug } from "@/hooks/useDebug";
+import { useToast } from "@/hooks/useToast";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -27,6 +31,9 @@ const fetchNFTData = (address: string) => {
 };
 
 export default function Home() {
+  const { debug, isDebugStarted, logTitle, logs } = useDebug();
+  const { toast, showToast } = useToast();
+
   const [network, setNetwork] = useState("");
   const [nftAddress, setNFTAddress] = useState("");
   const [nftData, setNftData] = useState<NFT[]>([]);
@@ -34,14 +41,32 @@ export default function Home() {
   const [migrationResultURL, setMigrationResultURL] = useState("");
 
   const handleClickFetchNFTData = async () => {
-    const data = await fetchNFTData(nftAddress);
-    setNftData(data);
+    try {
+      debug.start("handleClickFetchNFTData");
+      const data = await fetchNFTData(nftAddress);
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      debug.log("Done!");
+      setNftData(data);
+    } catch (e: any) {
+      showToast({ message: e.message });
+    } finally {
+      debug.end();
+    }
   };
 
-  const handleMigrate = () => {
-    const url = "http://example.com/migration-result";
-    setMigrationResultURL(url);
-    setIsModalOpen(true);
+  const handleMigrate = async () => {
+    try {
+      debug.start("handleMigrate");
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      const url = "http://example.com/migration-result";
+      setMigrationResultURL(url);
+      setIsModalOpen(true);
+      debug.log("Done!");
+    } catch (e: any) {
+      showToast({ message: e.message });
+    } finally {
+      debug.end();
+    }
   };
 
   function renderHighlightedJSON(json: Metadata) {
@@ -70,8 +95,42 @@ export default function Home() {
     return jsx;
   }
 
+  useEffect(() => {
+    if (isDebugStarted || isModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto"; // or 'visible' if you want
+    }
+    return () => {
+      document.body.style.overflow = "auto"; // reset on unmount
+    };
+  }, [isDebugStarted, isModalOpen]);
+
   return (
     <main className={`${inter.className} min-h-screen flex flex-col bg-main p-5`}>
+      {isDebugStarted && (
+        <div className="fixed top-0 left-0 w-full h-screen bg-black bg-opacity-50 flex flex-col items-center justify-center z-50">
+          <div className="max-w-lg w-full bg-black p-4 rounded-lg shadow-2xl break-all">
+            <div className="flex justify-between items-center text-white text-sm align-left mb-2">
+              {logTitle ? `Logs for ${logTitle}` : "Logs"} <FaSpinner className="text-white text-sm animate-spin" />
+            </div>
+            {logs.map((log, i) => {
+              return (
+                <p key={`log_${i}`} className="text-green-600 text-xs align-left">
+                  {`>> ${log}`}
+                </p>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {toast && (
+        <div
+          className={`fixed bottom-4 right-4 w-80 bg-red-400 text-white p-4 rounded-lg shadow-2xl z-50 text-xs break-all`}
+        >
+          {toast.message.length > 200 ? toast.message.substring(0, 200) : toast.message}
+        </div>
+      )}
       <header className="flex justify-between items-center mb-8 px-4 py-2 bg-gray-100 rounded-lg shadow-md bg-sub">
         <h1 className="header-logo">GreenGate</h1>
         <ConnectButton accountStatus={"address"} showBalance={false} />
@@ -157,6 +216,18 @@ export default function Home() {
                   {migrationResultURL}
                 </a>
               </p>
+            </div>
+            <div className="w-full bg-black p-4 rounded-lg shadow-2xl break-all">
+              <div className="flex justify-between items-center text-white text-sm align-left mb-2">
+                {logTitle ? `Logs for ${logTitle}` : "Logs"}{" "}
+              </div>
+              {logs.map((log, i) => {
+                return (
+                  <p key={`log_${i}`} className="text-green-600 text-xs align-left">
+                    {`>> ${log}`}
+                  </p>
+                );
+              })}
             </div>
             <div className="flex justify-end">
               <button
