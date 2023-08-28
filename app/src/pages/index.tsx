@@ -10,9 +10,12 @@ import { sampleNFTAddress } from "@/lib/contract";
 import { ERC721EnumerableInterfaceID } from "@/lib/constant";
 import { ethers } from "ethers";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { multicall } from "@wagmi/core";
+
 import { erc721EnumerableAbi } from "@/lib/abi";
 
+import { createPublicClient, http } from "viem";
+import { bscTestnet } from "wagmi/chains";
+import { opBNBTestnet } from "@/lib/network";
 const inter = Inter({ subsets: ["latin"] });
 
 interface NFT {
@@ -29,10 +32,10 @@ export default function Home() {
   const { toast, showToast } = useToast();
   const { isConnected } = useIsConnected();
 
-  const [network, setNetwork] = useState("");
+  const [chainId, setChainId] = useState(97);
   const [nftAddress, setNFTAddress] = useState(sampleNFTAddress);
   const [nftData, setNftData] = useState<NFT[]>([]);
-  const { erc165, erc721Enumerable } = useContract({ address: nftAddress });
+  const { erc165, erc721Enumerable } = useContract({ chainId, address: nftAddress });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [migrationResultURL, setMigrationResultURL] = useState("");
@@ -40,6 +43,9 @@ export default function Home() {
   const handleClickFetchNFTData = async () => {
     try {
       debug.start("handleClickFetchNFTData");
+      debug.log("chainId", chainId);
+      debug.log("nftAddress", nftAddress);
+
       if (!ethers.utils.isAddress(nftAddress)) {
         throw new Error("Invalid NFT Contract Address");
       }
@@ -55,8 +61,23 @@ export default function Home() {
       debug.log("supportsInterface", ERC721EnumerableInterfaceID, isSupportsInterface);
       const totalSupply = await erc721Enumerable.totalSupply();
 
+      let publicClient;
+      if (chainId === 97) {
+        publicClient = createPublicClient({
+          chain: bscTestnet,
+          transport: http(),
+        });
+      } else if (chainId === 5611) {
+        publicClient = createPublicClient({
+          chain: opBNBTestnet,
+          transport: http(),
+        });
+      } else {
+        throw new Error("Invalid chainId");
+      }
+
       debug.log("totalSupply", totalSupply);
-      const tokenByIndexMulticallRes = await multicall({
+      const tokenByIndexMulticallRes = await publicClient.multicall({
         contracts: Array.from({ length: totalSupply }, (_, i) => i).map((index) => ({
           address: nftAddress as `0x${string}`,
           abi: erc721EnumerableAbi as any,
@@ -70,7 +91,7 @@ export default function Home() {
       const tokenIds = tokenByIndexMulticallRes.map(({ result }: any) => result as ethers.BigNumber);
       debug.log("tokenIds fetched");
 
-      const tokenURIMulticallRes = await multicall({
+      const tokenURIMulticallRes = await publicClient.multicall({
         contracts: tokenIds.map((tokenId) => ({
           address: nftAddress as `0x${string}`,
           abi: erc721EnumerableAbi as any,
@@ -259,13 +280,13 @@ export default function Home() {
               Select Network
             </label>
             <select
-              id="network"
+              id="chainId"
               className="bg-gray-200 p-2 w-full rounded-lg border-2 border-gray-300 focus:border-gray-400 outline-none input-form"
-              value={network}
-              onChange={(e) => setNetwork(e.target.value)}
+              value={chainId}
+              onChange={(e) => setChainId(Number(e.target.value))}
             >
-              <option value="BSC">BSC</option>
-              <option value="opBSC">opBSC</option>
+              <option value={97}>BSC</option>
+              <option value={5611}>opBNB</option>
             </select>
           </div>
           <div className="space-y-2">

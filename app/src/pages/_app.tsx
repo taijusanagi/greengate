@@ -7,10 +7,10 @@ import { getDefaultWallets, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { configureChains, createConfig, WagmiConfig } from "wagmi";
 import { bscTestnet } from "wagmi/chains";
 import { publicProvider } from "wagmi/providers/public";
-import { opBNBTestnet } from "@/lib/network";
+import { opBNBTestnet, greenFieldMekongTestnet } from "@/lib/network";
 
 const { chains, publicClient } = configureChains(
-  [bscTestnet, { ...opBNBTestnet, iconUrl: "/op_bnb.png" }],
+  [bscTestnet, opBNBTestnet, greenFieldMekongTestnet],
   [publicProvider()],
 );
 
@@ -29,8 +29,8 @@ const wagmiConfig = createConfig({
 export default function App({ Component, pageProps }: AppProps) {
   return (
     <WagmiConfig config={wagmiConfig}>
-      <RainbowKitProvider chains={chains}>
-        <Component {...pageProps} />{" "}
+      <RainbowKitProvider chains={chains.filter((chain) => chain.id === 5600)}>
+        <Component {...pageProps} />
       </RainbowKitProvider>
     </WagmiConfig>
   );
