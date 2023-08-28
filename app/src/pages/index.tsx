@@ -1,6 +1,8 @@
 import { Inter } from "next/font/google";
 import { useState } from "react";
 
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+
 const inter = Inter({ subsets: ["latin"] });
 
 interface NFT {
@@ -71,9 +73,7 @@ export default function Home() {
   return (
     <main className={`${inter.className} min-h-screen flex flex-col bg-main p-5`}>
       <header className="flex justify-end items-center mb-8 px-4 py-2 bg-gray-100 rounded-lg shadow-md bg-sub">
-        <button className="bg-gray-200 px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition btn-main">
-          Connect Wallet
-        </button>
+        <ConnectButton />
       </header>
       <div className="max-w-2xl w-full mx-auto p-5 bg-gray-100 rounded-lg shadow-md mb-8 bg-sub">
         <div className="flex flex-col space-y-4">
