@@ -31,8 +31,8 @@ const wagmiConfig = createConfig({
 
 export default function App({ Component, pageProps }: AppProps) {
   useEffect(() => {
-    (window as any).__PUBLIC_ZKCRYPTO_WASM_PATH__ =
-      "https://cdn.jsdelivr.net/npm/@bnb-chain/greenfield-zk-crypto/dist/node/zk-crypto.wasm";
+    (window as any).__PUBLIC_FILE_HANDLE_WASM_PATH__ = "/file-handle.wasm";
+    (window as any).__PUBLIC_ZKCRYPTO_WASM_PATH__ = "/zk-crypto.wasm";
     (window as any).getEddsaCompressedPublicKey = getEddsaCompressedPublicKey;
   }, []);
 

@@ -18,7 +18,7 @@ import { bscTestnet } from "wagmi/chains";
 import { opBNBTestnet } from "@/lib/network";
 import { client } from "@/lib/greenfield/utils/client";
 import { useAccount } from "wagmi";
-import { FileHandler } from "@bnb-chain/greenfiled-file-handle";
+import * as Handler from "@bnb-chain/greenfiled-file-handle";
 import { getOffchainAuthKeys } from "@/lib/greenfield/utils/offchainAuth";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -243,19 +243,34 @@ export default function Home() {
     }
 
     const bytes = await fileToUint8Array(file);
-    const { contentLength, expectCheckSums } = await FileHandler.getPieceHashRoots(bytes);
-    // console.log(result);
 
-    // const createObjectTx = await client.object.createObject({
-    //   bucketName: bucketName,
-    //   objectName: objectName,
-    //   creator: userAddress,
-    //   visibility: "VISIBILITY_TYPE_PUBLIC_READ",
-    //   fileType: file.type,
-    //   redundancyType: "REDUNDANCY_EC_TYPE",
-    //   contentLength,
-    //   expectCheckSums: JSON.parse(expectCheckSums),
-    // });
+    const DEFAULT_SEGMENT_SIZE = 16 * 1024 * 1024;
+    const DEFAULT_DATA_BLOCKS = 4;
+    const DEFAULT_PARITY_BLOCKS = 2;
+    const handler = await (Handler as any).startRunningService("/file-handle.wasm");
+    const { contentLength, expectCheckSums } = await handler.getCheckSums(
+      bytes,
+      DEFAULT_SEGMENT_SIZE,
+      DEFAULT_DATA_BLOCKS,
+      DEFAULT_PARITY_BLOCKS,
+    );
+
+    debug.log("createObject");
+    const createObjectTx = await client.object.createObject({
+      bucketName: bucketName,
+      objectName: objectName,
+      creator: userAddress,
+      visibility: "VISIBILITY_TYPE_PUBLIC_READ",
+      fileType: file.type,
+      redundancyType: "REDUNDANCY_EC_TYPE",
+      contentLength,
+      expectCheckSums: JSON.parse(expectCheckSums),
+      signType: "offChainAuth", // Replace with actual sign type
+      domain: window.location.origin,
+      seedString: offChainData.seedString,
+    });
+
+    console.log(createObjectTx);
 
     return "http://localhost:3000";
   };
