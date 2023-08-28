@@ -11,7 +11,7 @@ export function useDebug() {
       setLogs([]);
       setIsDebugStarted(true);
     },
-    log: (...messages: string[]) => {
+    log: (...messages: any[]) => {
       console.log(...messages);
       setLogs((logs) => [...logs, messages.join(" ")]);
     },

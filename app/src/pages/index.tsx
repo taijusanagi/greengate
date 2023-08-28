@@ -21,9 +21,7 @@ interface NFT {
 }
 
 interface Metadata {
-  name?: string;
-  description?: string;
-  image?: string;
+  [key: string]: any;
 }
 
 export default function Home() {
@@ -117,8 +115,53 @@ export default function Home() {
   const handleMigrate = async () => {
     try {
       debug.start("handleMigrate");
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-      const url = "http://example.com/migration-result";
+
+      const mutableNFTData = [...nftData];
+      const ipfsData: string[] = [];
+      mutableNFTData.forEach((nft) => {
+        if (nft.metadata) {
+          for (const key in nft.metadata) {
+            const value = nft.metadata[key];
+            if (typeof value === "string" && value.startsWith("ipfs://")) {
+              ipfsData.push(value);
+            }
+          }
+        }
+      });
+      debug.log("ipfsData.length", ipfsData.length);
+
+      const migratedData: string[] = [];
+      for (let ipfsUri of ipfsData) {
+        const response = await fetch(`https://ipfs.io/ipfs/${ipfsUri.split("://")[1]}`);
+        if (!response.ok) {
+          console.error(`Failed to fetch from IPFS: ${ipfsUri}`);
+          continue; // Move to the next URI
+        }
+        console.log(response);
+        const content = await response.blob();
+        const newUri = await uploadBlobToStorage(content);
+        if (newUri) {
+          migratedData.push(newUri);
+        }
+      }
+      debug.log("migratedData.length", migratedData.length);
+
+      mutableNFTData.forEach((nft) => {
+        if (nft.metadata) {
+          for (const key in nft.metadata) {
+            const value = nft.metadata[key];
+            const index = ipfsData.indexOf(value);
+            if (index !== -1) {
+              nft.metadata[key] = migratedData[index];
+            }
+          }
+        }
+      });
+
+      debug.log("uploadNFTDataToStorage");
+      const url = await uploadNFTDataToStorage(mutableNFTData);
+
+      debug.log("url", url);
       setMigrationResultURL(url);
       setIsModalOpen(true);
       debug.log("Done!");
@@ -129,9 +172,17 @@ export default function Home() {
     }
   };
 
+  const uploadBlobToStorage = async (content: Blob) => {
+    return "http://localhost:3000";
+  };
+
+  const uploadNFTDataToStorage = async (nftData: NFT[]) => {
+    return "http://localhost:3000";
+  };
+
   function renderHighlightedJSON(json: Metadata) {
     const jsonString = JSON.stringify(json, null, 2);
-    const regex = /(ipfs:\/\/\S+)/g;
+    const regex = /(")(ipfs:\/\/[^",\s]+)(")/g; // Updated regex to capture surrounding quotes
 
     let lastIndex = 0;
     const jsx = [];
@@ -139,16 +190,20 @@ export default function Home() {
     let match;
     while ((match = regex.exec(jsonString)) !== null) {
       const preText = jsonString.substring(lastIndex, match.index);
-      const matchedText = match[0];
+      const openingQuote = match[1]; // The opening quote
+      const matchedText = match[2]; // The captured IPFS URI
+      const closingQuote = match[3]; // The closing quote
 
       jsx.push(<span key={lastIndex}>{preText}</span>);
+      jsx.push(<span key={`opening-${match.index}`}>{openingQuote}</span>); // Render opening quote
       jsx.push(
         <span key={match.index} className="bg-yellow-200">
           {matchedText}
         </span>,
       );
+      jsx.push(<span key={`closing-${match.index}`}>{closingQuote}</span>); // Render closing quote
 
-      lastIndex = match.index + matchedText.length;
+      lastIndex = regex.lastIndex;
     }
     jsx.push(<span key={lastIndex}>{jsonString.substring(lastIndex)}</span>);
 
@@ -296,7 +351,6 @@ export default function Home() {
                 className="bg-gray-200 text-gray-700 p-2 rounded-lg mt-2 shadow-md hover:shadow-lg transition btn-main"
                 onClick={() => {
                   setNftData([]);
-                  setNFTAddress("");
                   setIsModalOpen(false);
                 }}
               >
