@@ -216,13 +216,12 @@ export default function Home() {
       throw new Error("Please connect your wallet");
     }
     const provider = await connector?.getProvider();
+
     const offChainData = await getOffchainAuthKeys(userAddress, provider);
     if (!offChainData) {
       alert("No offchain, please create offchain pairs first");
       return;
     }
-    console.log("offChainData", offChainData);
-
     const bucketName = "test-for-create-bucket";
     const objectName = "test";
     let jsonString = '{"name": "John", "age": 30, "city": "New York"}';
