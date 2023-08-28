@@ -16,6 +16,10 @@ import { erc721EnumerableAbi } from "@/lib/abi";
 import { createPublicClient, http } from "viem";
 import { bscTestnet } from "wagmi/chains";
 import { opBNBTestnet } from "@/lib/network";
+import { greenfieldClient } from "@/lib/greenfield";
+import { useAccount } from "wagmi";
+import { FileHandler } from "@bnb-chain/greenfiled-file-handle";
+
 const inter = Inter({ subsets: ["latin"] });
 
 interface NFT {
@@ -27,10 +31,13 @@ interface Metadata {
   [key: string]: any;
 }
 
+const greenfieldBaseURI = "https://gnfd-sp.4everland.org/view/";
+
 export default function Home() {
   const { debug, isDebugStarted, logTitle, logs } = useDebug();
   const { toast, showToast } = useToast();
   const { isConnected } = useIsConnected();
+  const { address: userAddress } = useAccount();
 
   const [chainId, setChainId] = useState(97);
   const [nftAddress, setNFTAddress] = useState(sampleNFTAddress);
@@ -45,7 +52,6 @@ export default function Home() {
       debug.start("handleClickFetchNFTData");
       debug.log("chainId", chainId);
       debug.log("nftAddress", nftAddress);
-
       if (!ethers.utils.isAddress(nftAddress)) {
         throw new Error("Invalid NFT Contract Address");
       }
@@ -198,6 +204,54 @@ export default function Home() {
   };
 
   const uploadNFTDataToStorage = async (nftData: NFT[]) => {
+    if (!userAddress) {
+      throw new Error("Please connect your wallet");
+    }
+
+    const bucketName = "test-for-create-bucket";
+    const objectName = "test";
+    let jsonString = '{"name": "John", "age": 30, "city": "New York"}';
+    let blob = new Blob([jsonString], { type: "application/json" });
+    let file = new File([blob], "test", { type: "application/json" });
+
+    async function fileToUint8Array(file: File): Promise<Uint8Array> {
+      return new Promise((resolve, reject) => {
+        let reader = new FileReader() as any;
+        reader.onload = function () {
+          resolve(new Uint8Array(reader.result));
+        };
+        reader.onerror = function () {
+          reject(new Error("Failed to read file"));
+        };
+        reader.readAsArrayBuffer(file);
+      });
+    }
+
+    const bytes = await fileToUint8Array(file);
+    const { contentLength, expectCheckSums } = await FileHandler.getPieceHashRoots(bytes);
+    console.log(result);
+
+    const createObjectTx = await greenfieldClient.object.createObject(
+      {
+        bucketName: bucketName,
+        objectName: objectName,
+        creator: userAddress,
+        visibility: "VISIBILITY_TYPE_PUBLIC_READ",
+        fileType: file.type,
+        redundancyType: "REDUNDANCY_EC_TYPE",
+        contentLength,
+        expectCheckSums: JSON.parse(expectCheckSums),
+      },
+      // {
+      //   type: "EDDSA",
+      //   domain: window.location.origin,
+      //   seed: offChainData.seedString,
+      //   address,
+      //   // type: 'ECDSA',
+      //   // privateKey: ACCOUNT_PRIVATEKEY,
+      // },
+    );
+
     return "http://localhost:3000";
   };
 
