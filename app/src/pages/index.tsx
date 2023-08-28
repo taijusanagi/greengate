@@ -2,15 +2,21 @@ import { Inter } from "next/font/google";
 import { FaSpinner } from "react-icons/fa";
 
 import { useEffect, useState } from "react";
-
-import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useDebug } from "@/hooks/useDebug";
 import { useToast } from "@/hooks/useToast";
+import { useContract } from "@/hooks/useContract";
+import { useIsConnected } from "@/hooks/useIsConnected";
+import { sampleNFTAddress } from "@/lib/contract";
+import { ERC721EnumerableInterfaceID } from "@/lib/constant";
+import { ethers } from "ethers";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { multicall } from "@wagmi/core";
+import { erc721EnumerableAbi } from "@/lib/abi";
 
 const inter = Inter({ subsets: ["latin"] });
 
 interface NFT {
-  tokenId: number;
+  tokenId: string;
   metadata?: Metadata;
 }
 
@@ -20,33 +26,87 @@ interface Metadata {
   image?: string;
 }
 
-const fetchNFTData = (address: string) => {
-  return Promise.resolve([
-    { tokenId: 1, metadata: { name: "NFT 1", image: "ipfs://Qm..." } },
-    { tokenId: 2, metadata: { name: "NFT 2", image: "http://localhost:3000" } },
-    { tokenId: 3, metadata: { name: "NFT 3", image: "http://localhost:3000" } },
-    { tokenId: 4, metadata: { name: "NFT 4", image: "http://localhost:3000" } },
-    { tokenId: 5, metadata: { name: "NFT 5", image: "http://localhost:3000" } },
-  ]);
-};
-
 export default function Home() {
   const { debug, isDebugStarted, logTitle, logs } = useDebug();
   const { toast, showToast } = useToast();
+  const { isConnected } = useIsConnected();
 
   const [network, setNetwork] = useState("");
-  const [nftAddress, setNFTAddress] = useState("");
+  const [nftAddress, setNFTAddress] = useState(sampleNFTAddress);
   const [nftData, setNftData] = useState<NFT[]>([]);
+  const { erc165, erc721Enumerable } = useContract({ address: nftAddress });
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [migrationResultURL, setMigrationResultURL] = useState("");
 
   const handleClickFetchNFTData = async () => {
     try {
       debug.start("handleClickFetchNFTData");
-      const data = await fetchNFTData(nftAddress);
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+      if (!ethers.utils.isAddress(nftAddress)) {
+        throw new Error("Invalid NFT Contract Address");
+      }
+      if (!isConnected) {
+        throw new Error("Please connect your wallet");
+      }
+      if (!erc165 || !erc721Enumerable) {
+        throw new Error("Contract is not defined");
+      }
+      const isSupportsInterface = await erc165.supportsInterface(ERC721EnumerableInterfaceID).catch(() => {
+        throw new Error("Contract does not support ERC721Enumerable");
+      });
+      debug.log("supportsInterface", ERC721EnumerableInterfaceID, isSupportsInterface);
+      const totalSupply = await erc721Enumerable.totalSupply();
+
+      debug.log("totalSupply", totalSupply);
+      const tokenByIndexMulticallRes = await multicall({
+        contracts: Array.from({ length: totalSupply }, (_, i) => i).map((index) => ({
+          address: nftAddress as `0x${string}`,
+          abi: erc721EnumerableAbi as any,
+          functionName: "tokenByIndex",
+          args: [index],
+        })),
+      });
+      if (tokenByIndexMulticallRes.some(({ status }) => status === "failure")) {
+        throw new Error("Failed to fetch tokenIds");
+      }
+      const tokenIds = tokenByIndexMulticallRes.map(({ result }: any) => result as ethers.BigNumber);
+      debug.log("tokenIds fetched");
+
+      const tokenURIMulticallRes = await multicall({
+        contracts: tokenIds.map((tokenId) => ({
+          address: nftAddress as `0x${string}`,
+          abi: erc721EnumerableAbi as any,
+          functionName: "tokenURI",
+          args: [tokenId],
+        })),
+      });
+
+      if (tokenURIMulticallRes.some(({ status }) => status === "failure")) {
+        throw new Error("Failed to fetch tokenURIs");
+      }
+      const tokenURIs = tokenURIMulticallRes.map(({ result }: any) => result as string);
+      console.log("tokenURIs fetched");
+
+      const metadataList = await Promise.all(
+        tokenURIs.map(async (uri) => {
+          let fetchURL = uri;
+          if (uri.startsWith("ipfs://")) {
+            const IPFS_GATEWAY = "https://ipfs.io/ipfs/";
+            fetchURL = IPFS_GATEWAY + uri.substring(7);
+          }
+          const response = await fetch(fetchURL);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch token data from URI: ${uri}`);
+          }
+          return await response.json();
+        }),
+      );
+      const nftData = tokenIds.map((tokenId, i) => ({
+        tokenId: tokenId.toString(),
+        metadata: metadataList[i],
+      }));
       debug.log("Done!");
-      setNftData(data);
+      setNftData(nftData);
     } catch (e: any) {
       showToast({ message: e.message });
     } finally {

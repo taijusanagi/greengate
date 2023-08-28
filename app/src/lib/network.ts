@@ -1,13 +1,5 @@
-export const bscTestnetRPC = "https://data-seed-prebsc-1-s1.bnbchain.org:8545";
-export const bscTestnetChainId = 97;
-export const bstTestnetSampleNFTAddress = "0x0E2487584BE1c002654ccFfE17d6391a88C1e72A";
-
-export const opBNBTestnetRPC = "https://opbnb-testnet-rpc.bnbchain.org";
-export const opBNBTestnetChainId = 5611;
-export const opBNBTestnetSampleNFTAddress = "0x0E2487584BE1c002654ccFfE17d6391a88C1e72A";
-
 export const opBNBTestnet = {
-  id: opBNBTestnetChainId,
+  id: 5611,
   name: "opBNBTestnet",
   network: "testnet",
   nativeCurrency: {
@@ -17,10 +9,10 @@ export const opBNBTestnet = {
   },
   rpcUrls: {
     default: {
-      http: [opBNBTestnetRPC],
+      http: ["https://opbnb-testnet-rpc.bnbchain.org"],
     },
     public: {
-      http: [opBNBTestnetRPC],
+      http: ["https://opbnb-testnet-rpc.bnbchain.org"],
     },
   },
   testnet: true,
@@ -28,6 +20,11 @@ export const opBNBTestnet = {
     default: {
       name: "opBNB Explorer",
       url: "https://opbnbscan.com/",
+    },
+  },
+  contracts: {
+    multicall3: {
+      address: "0xca11bde05977b3631167028862be2a173976ca11",
     },
   },
 };
