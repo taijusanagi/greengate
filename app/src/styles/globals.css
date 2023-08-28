@@ -63,3 +63,11 @@
   transform: none;
   box-shadow: none;
 }
+
+.header-logo {
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: #2d3748; /* Deep Blue-Gray */
+  text-shadow: 2px 2px 4px rgba(0, 128, 43, 0.3); /* Green shadow for depth */
+}

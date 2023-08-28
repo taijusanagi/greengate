@@ -72,8 +72,9 @@ export default function Home() {
 
   return (
     <main className={`${inter.className} min-h-screen flex flex-col bg-main p-5`}>
-      <header className="flex justify-end items-center mb-8 px-4 py-2 bg-gray-100 rounded-lg shadow-md bg-sub">
-        <ConnectButton />
+      <header className="flex justify-between items-center mb-8 px-4 py-2 bg-gray-100 rounded-lg shadow-md bg-sub">
+        <h1 className="header-logo">GreenGate</h1>
+        <ConnectButton accountStatus={"address"} showBalance={false} />
       </header>
       <div className="max-w-2xl w-full mx-auto p-5 bg-gray-100 rounded-lg shadow-md mb-8 bg-sub">
         <div className="flex flex-col space-y-4">
