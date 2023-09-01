@@ -200,7 +200,7 @@ export default function Home() {
       alert("No offchain, please create offchain pairs first");
       return;
     }
-    debug.log("createMainFolderTx...");
+    debug.log("createMainFolderTx for", folderName);
     const createMainFolderTx = await client.object.createFolder(
       {
         bucketName: bucketName,
@@ -214,7 +214,7 @@ export default function Home() {
         address: userAddress,
       },
     );
-    debug.log("createAssetFolderTx...");
+    debug.log("createAssetFolderTx for", folderName + "/assets");
     const createAssetFolderTx = await client.object.createFolder(
       {
         bucketName: bucketName,
@@ -238,9 +238,10 @@ export default function Home() {
     for (const ipfsUri of ipfsData) {
       // for faster testing
       if (createAssetTxListIndex > 0) {
+        debug.log("Only process 1 record for faster demo");
         break;
       }
-      console.log("ipfsUri", ipfsUri);
+      debug.log("process", ipfsUri);
       const cid = ipfsUri.split("://")[1];
       const response = await fetch(`https://ipfs.io/ipfs/${cid}`);
       const fileType = response.headers.get("Content-Type") as string;
@@ -283,9 +284,10 @@ export default function Home() {
     for (const nft of mutableNFTData) {
       // for faster testing
       if (createEachMetadataTxIndex > 0) {
+        debug.log("Only process 1 record for faster demo");
         break;
       }
-      console.log("nft.metadata", nft.metadata);
+      debug.log("process", nft.tokenId);
       const fileType = "application/json";
       let blob = new Blob([JSON.stringify(nft.metadata)], { type: "application/json" });
       const bytes = await blobToUint8Array(blob);
