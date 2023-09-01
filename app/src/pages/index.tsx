@@ -23,6 +23,8 @@ import { getOffchainAuthKeys } from "@/lib/greenfield/utils/offchainAuth";
 
 const inter = Inter({ subsets: ["latin"] });
 
+const greenfieldBaseURL = "https://gnfd-testnet-sp2.nodereal.io/view";
+
 interface NFT {
   tokenId: string;
   metadata?: Metadata;
@@ -31,8 +33,6 @@ interface NFT {
 interface Metadata {
   [key: string]: any;
 }
-
-const greenfieldBaseURI = "https://gnfd-sp.4everland.org/view/";
 
 export default function Home() {
   const { debug, isDebugStarted, logTitle, logs } = useDebug();
@@ -48,7 +48,8 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [migrationResultURL, setMigrationResultURL] = useState("");
 
-  const signer = useEthersSigner();
+  const [bucketName, setBucketName] = useState("test");
+  const [folderName, setFolderName] = useState("byac");
 
   const handleClickFetchNFTData = async () => {
     try {
@@ -146,55 +147,11 @@ export default function Home() {
   const handleMigrate = async () => {
     try {
       debug.start("handleMigrate");
-
-      const mutableNFTData = [...nftData];
-      const ipfsData: string[] = [];
-      mutableNFTData.forEach((nft) => {
-        if (nft.metadata) {
-          for (const key in nft.metadata) {
-            const value = nft.metadata[key];
-            if (typeof value === "string" && value.startsWith("ipfs://")) {
-              ipfsData.push(value);
-            }
-          }
-        }
-      });
-      debug.log("ipfsData.length", ipfsData.length);
-
-      const migratedData: string[] = [];
-      for (let ipfsUri of ipfsData) {
-        const response = await fetch(`https://ipfs.io/ipfs/${ipfsUri.split("://")[1]}`);
-        if (!response.ok) {
-          console.error(`Failed to fetch from IPFS: ${ipfsUri}`);
-          continue; // Move to the next URI
-        }
-        const content = await response.blob();
-        const newUri = await uploadBlobToStorage(content);
-        if (newUri) {
-          migratedData.push(newUri);
-        }
-      }
-      debug.log("migratedData.length", migratedData.length);
-
-      mutableNFTData.forEach((nft) => {
-        if (nft.metadata) {
-          for (const key in nft.metadata) {
-            const value = nft.metadata[key];
-            const index = ipfsData.indexOf(value);
-            if (index !== -1) {
-              nft.metadata[key] = migratedData[index];
-            }
-          }
-        }
-      });
-
       debug.log("uploadNFTDataToStorage");
-      const url = await uploadNFTDataToStorage(mutableNFTData);
-
+      const url = await uploadNFTDataToStorage(nftData);
       if (!url) {
         throw new Error("Failed to upload NFT data to storage");
       }
-
       debug.log("url", url);
       setMigrationResultURL(url);
       setIsModalOpen(true);
@@ -207,118 +164,202 @@ export default function Home() {
     }
   };
 
-  const uploadBlobToStorage = async (content: Blob) => {
-    return "http://localhost:3000";
-  };
+  async function blobToUint8Array(blob: Blob): Promise<Uint8Array> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsArrayBuffer(blob);
+      reader.onload = () => resolve(new Uint8Array(reader.result as ArrayBuffer));
+      reader.onerror = (error) => reject(error);
+    });
+  }
 
   const uploadNFTDataToStorage = async (nftData: NFT[]) => {
     if (!userAddress || !connector) {
       throw new Error("Please connect your wallet");
     }
+    const ipfsData: string[] = [];
+    const mutableNFTData = nftData.map((nft) => ({
+      ...nft,
+      metadata: nft.metadata ? { ...nft.metadata } : undefined,
+    }));
+    mutableNFTData.forEach((nft) => {
+      if (nft.metadata) {
+        for (const key in nft.metadata) {
+          const value = nft.metadata[key];
+          if (typeof value === "string" && value.startsWith("ipfs://")) {
+            ipfsData.push(value);
+            const cid = value.split("://")[1];
+            nft.metadata[key] = `${greenfieldBaseURL}/${bucketName}/${folderName}/assets/${cid}`;
+          }
+        }
+      }
+    });
     const provider = await connector?.getProvider();
-
     const offChainData = await getOffchainAuthKeys(userAddress, provider);
     if (!offChainData) {
       alert("No offchain, please create offchain pairs first");
       return;
     }
-    const bucketName = "test";
-    const objectName = "test2";
-    let jsonString = '{"name": "John", "age": 30, "city": "New York"}';
-    let blob = new Blob([jsonString], { type: "application/json" });
-    let file = new File([blob], "test", { type: "application/json" });
-
-    async function fileToUint8Array(file: File): Promise<Uint8Array> {
-      return new Promise((resolve, reject) => {
-        let reader = new FileReader() as any;
-        reader.onload = function () {
-          resolve(new Uint8Array(reader.result));
-        };
-        reader.onerror = function () {
-          reject(new Error("Failed to read file"));
-        };
-        reader.readAsArrayBuffer(file);
-      });
-    }
-
-    const bytes = await fileToUint8Array(file);
-
-    const DEFAULT_SEGMENT_SIZE = 16 * 1024 * 1024;
-    const DEFAULT_DATA_BLOCKS = 4;
-    const DEFAULT_PARITY_BLOCKS = 2;
-    // const handler = await (Handler as any).startRunningService("/file-handle.wasm");
-    const { contentLength, expectCheckSums } = await Handler.getCheckSums(
-      bytes,
-      DEFAULT_SEGMENT_SIZE,
-      DEFAULT_DATA_BLOCKS,
-      DEFAULT_PARITY_BLOCKS,
-    );
-
-    debug.log("createObject");
-
-    const spInfo = await getAllSps();
-    console.log(spInfo);
-    console.log({ contentLength, expectCheckSums });
-
-    // const createBucketTx = await client.bucket.createBucket({
-    //   bucketName: bucketName + "-add",
-    //   creator: userAddress,
-    //   visibility: "VISIBILITY_TYPE_PUBLIC_READ",
-    //   chargedReadQuota: "0",
-    //   spInfo: {
-    //     primarySpAddress: spInfo[0].address,
-    //   },
-    //   // paymentAddress: userAddress,
-    //   signType: "offChainAuth",
-    //   domain: window.location.origin,
-    //   seedString: offChainData.seedString,
-    // });
-    // console.log(createBucketTx);
-    const createObjectTx = await client.object.createObject(
+    debug.log("createMainFolderTx...");
+    const createMainFolderTx = await client.object.createFolder(
       {
         bucketName: bucketName,
-        objectName: objectName,
+        objectName: folderName + "/",
         creator: userAddress,
-        visibility: "VISIBILITY_TYPE_PUBLIC_READ",
-        fileType: file.type,
-        redundancyType: "REDUNDANCY_EC_TYPE",
-        contentLength,
-        expectCheckSums: JSON.parse(expectCheckSums),
       },
       {
         type: "EDDSA",
         domain: window.location.origin,
         seed: offChainData.seedString,
         address: userAddress,
-        // type: 'ECDSA',
-        // privateKey: ACCOUNT_PRIVATEKEY,
       },
     );
+    debug.log("createAssetFolderTx...");
+    const createAssetFolderTx = await client.object.createFolder(
+      {
+        bucketName: bucketName,
+        objectName: folderName + "/" + "assets/",
+        creator: userAddress,
+      },
+      {
+        type: "EDDSA",
+        domain: window.location.origin,
+        seed: offChainData.seedString,
+        address: userAddress,
+      },
+    );
+    const DEFAULT_SEGMENT_SIZE = 16 * 1024 * 1024;
+    const DEFAULT_DATA_BLOCKS = 4;
+    const DEFAULT_PARITY_BLOCKS = 2;
+    debug.log("createAssetTxList...");
+    const createAssetTxList = [];
+    const uploadAssetInfo = [];
+    let createAssetTxListIndex = 0;
+    for (const ipfsUri of ipfsData) {
+      // for faster testing
+      if (createAssetTxListIndex > 0) {
+        break;
+      }
+      console.log("ipfsUri", ipfsUri);
+      const cid = ipfsUri.split("://")[1];
+      const response = await fetch(`https://ipfs.io/ipfs/${cid}`);
+      const fileType = response.headers.get("Content-Type") as string;
+      const blob = await response.blob();
+      const bytes = await blobToUint8Array(blob);
+      const { contentLength, expectCheckSums } = await Handler.getCheckSums(
+        bytes,
+        DEFAULT_SEGMENT_SIZE,
+        DEFAULT_DATA_BLOCKS,
+        DEFAULT_PARITY_BLOCKS,
+      );
+      const objectName = folderName + "/" + "assets/" + cid;
+      const createAssetTx = await client.object.createObject(
+        {
+          bucketName: bucketName,
+          objectName,
+          creator: userAddress,
+          visibility: "VISIBILITY_TYPE_PUBLIC_READ",
+          fileType,
+          redundancyType: "REDUNDANCY_EC_TYPE",
+          contentLength,
+          expectCheckSums: JSON.parse(expectCheckSums),
+        },
+        {
+          type: "EDDSA",
+          domain: window.location.origin,
+          seed: offChainData.seedString,
+          address: userAddress,
+        },
+      );
+      createAssetTxList.push(createAssetTx);
+      uploadAssetInfo.push({ file: new File([blob], objectName, { type: fileType }), objectName });
+      createAssetTxListIndex++;
+    }
 
-    console.log(createObjectTx);
+    debug.log("createEachMetadataTxList...");
+    const createEachMetadataTxList = [];
+    const uploadEachMetadataInfo = [];
+    let createEachMetadataTxIndex = 0;
+    for (const nft of mutableNFTData) {
+      // for faster testing
+      if (createEachMetadataTxIndex > 0) {
+        break;
+      }
+      console.log("nft.metadata", nft.metadata);
+      const fileType = "application/json";
+      let blob = new Blob([JSON.stringify(nft.metadata)], { type: "application/json" });
+      const bytes = await blobToUint8Array(blob);
+      const { contentLength, expectCheckSums } = await Handler.getCheckSums(
+        bytes,
+        DEFAULT_SEGMENT_SIZE,
+        DEFAULT_DATA_BLOCKS,
+        DEFAULT_PARITY_BLOCKS,
+      );
+      const objectName = folderName + "/" + createEachMetadataTxIndex;
+      const createEachMetadataTx = await client.object.createObject(
+        {
+          bucketName: bucketName,
+          objectName,
+          creator: userAddress,
+          visibility: "VISIBILITY_TYPE_PUBLIC_READ",
+          fileType,
+          redundancyType: "REDUNDANCY_EC_TYPE",
+          contentLength,
+          expectCheckSums: JSON.parse(expectCheckSums),
+        },
+        {
+          type: "EDDSA",
+          domain: window.location.origin,
+          seed: offChainData.seedString,
+          address: userAddress,
+        },
+      );
+      createEachMetadataTxList.push(createEachMetadataTx);
+      uploadEachMetadataInfo.push({ file: new File([blob], objectName, { type: fileType }), objectName });
+      createEachMetadataTxIndex++;
+    }
 
-    const simulateInfo = await createObjectTx.simulate({
+    const multiTx = await client.basic.multiTx([
+      createMainFolderTx,
+      createAssetFolderTx,
+      ...createAssetTxList,
+      ...createEachMetadataTxList,
+    ]);
+    const simulateInfo = await multiTx.simulate({
       denom: "BNB",
     });
-    console.log("simulateInfo", simulateInfo);
-
-    const res = await createObjectTx.broadcast({
+    debug.log("simulateInfo.gasFee", simulateInfo.gasFee);
+    debug.log("simulateInfo.gasLimit", simulateInfo.gasLimit);
+    debug.log("simulateInfo.gasPrice", simulateInfo.gasPrice);
+    const multiTxRes = await multiTx.broadcast({
       denom: "BNB",
       gasLimit: Number(simulateInfo?.gasLimit),
       gasPrice: simulateInfo?.gasPrice || "5000000000",
       payer: userAddress,
       granter: "",
     });
+    const txnHash = multiTxRes.transactionHash;
+    debug.log("txnHash", txnHash);
 
-    console.log("res", res);
-
-    if (res.code === 0) {
-      alert("create object tx success");
+    for (const info of [...uploadAssetInfo, ...uploadEachMetadataInfo]) {
+      debug.log("uploadObject", info.objectName);
+      const res = await client.object.uploadObject(
+        {
+          bucketName: bucketName,
+          objectName: info.objectName,
+          body: info.file,
+          txnHash,
+        },
+        {
+          type: "EDDSA",
+          domain: window.location.origin,
+          seed: offChainData.seedString,
+          address: userAddress,
+        },
+      );
+      console.log("res", res);
     }
-
-    // console.log("simulateInfo", simulateInfo);
-
-    return "http://localhost:3000";
+    return `${greenfieldBaseURL}/${bucketName}/${folderName}`;
   };
 
   function renderHighlightedJSON(json: Metadata) {
@@ -393,51 +434,94 @@ export default function Home() {
         <h1 className="header-logo">GreenGate</h1>
         <ConnectButton accountStatus={"address"} showBalance={false} chainStatus={"icon"} />
       </header>
+
       <div className="max-w-2xl w-full mx-auto p-4 bg-gray-100 rounded-lg shadow-md mb-8 bg-sub">
-        <div className="flex flex-col space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="network" className="block font-medium text-gray-600">
-              Select Network
-            </label>
-            <select
-              id="chainId"
-              className="bg-gray-200 p-2 w-full rounded-lg border-2 border-gray-300 focus:border-gray-400 outline-none input-form"
-              value={chainId}
-              onChange={(e) => setChainId(Number(e.target.value))}
-            >
-              <option value={97}>BSC</option>
-              <option value={5611}>opBNB</option>
-            </select>
-          </div>
-          <div className="space-y-2">
-            <label htmlFor="address" className="block font-medium text-gray-600">
-              NFT Contract Address
-            </label>
-            <input
-              id="address"
-              className="bg-gray-200 p-2 w-full rounded-lg border-2 border-gray-300 focus:border-gray-400 outline-none input-form"
-              type="text"
-              placeholder="Enter NFT Contract Address"
-              value={nftAddress}
-              onChange={(e) => setNFTAddress(e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <button
-              type="submit"
-              className="bg-gray-200 text-gray-600 p-2 w-full rounded-lg shadow-md hover:shadow-lg transition btn-main"
-              onClick={handleClickFetchNFTData}
-              disabled={!nftAddress.length}
-            >
-              Fetch NFT Data
+        <div className="mb-6 flex justify-end items-center">
+          <nav className="flex space-x-4 text-gray-600">
+            <button className={"px-4 py-2 text-green-600 font-semibold border-b-2 border-green-600"}>
+              NFT Migrator
             </button>
-            <button
-              className="bg-gray-200 text-gray-600 p-2 w-full rounded-lg mt-2 shadow-md hover:shadow-lg transition btn-main"
-              onClick={handleMigrate}
-              disabled={nftData.length == 0}
-            >
-              Migrate
+            <button className={"px-4 py-2 text-gray-600 border-b-2 border-gray-600 opacity-25 cursor-not-allowed"}>
+              Other Migrator
             </button>
+          </nav>
+        </div>
+        <div className="flex flex-col space-y-8">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="network" className="block font-medium text-gray-600">
+                NFT Network
+              </label>
+              <select
+                id="chainId"
+                className="bg-gray-200 p-2 w-full rounded-lg border-2 border-gray-300 focus:border-gray-400 outline-none input-form"
+                value={chainId}
+                onChange={(e) => setChainId(Number(e.target.value))}
+              >
+                <option value={97}>BSC</option>
+                <option value={5611}>opBNB</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="address" className="block font-medium text-gray-600">
+                NFT Contract Address
+              </label>
+              <input
+                id="address"
+                className="bg-gray-200 p-2 w-full rounded-lg border-2 border-gray-300 focus:border-gray-400 outline-none input-form"
+                type="text"
+                placeholder="Enter NFT Contract Address"
+                value={nftAddress}
+                onChange={(e) => setNFTAddress(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <button
+                type="submit"
+                className="bg-gray-200 text-gray-600 p-2 w-full rounded-lg shadow-md hover:shadow-lg transition btn-main"
+                onClick={handleClickFetchNFTData}
+                disabled={!nftAddress.length}
+              >
+                Fetch NFT Data
+              </button>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="network" className="block font-medium text-gray-600">
+                BNB Greenfield Bucket Name
+              </label>
+              <input
+                id="bucketName"
+                className="bg-gray-200 p-2 w-full rounded-lg border-2 border-gray-300 focus:border-gray-400 outline-none input-form"
+                type="text"
+                placeholder="Enter Bucket Name"
+                value={bucketName}
+                onChange={(e) => setBucketName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="address" className="block font-medium text-gray-600">
+                BNB Greenfield Folder Name
+              </label>
+              <input
+                id="folderName"
+                className="bg-gray-200 p-2 w-full rounded-lg border-2 border-gray-300 focus:border-gray-400 outline-none input-form"
+                type="text"
+                placeholder="Enter Folder Name"
+                value={folderName}
+                onChange={(e) => setFolderName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <button
+                className="bg-gray-200 text-gray-600 p-2 w-full rounded-lg mt-2 shadow-md hover:shadow-lg transition btn-main"
+                onClick={handleMigrate}
+                disabled={nftData.length == 0 || !bucketName || !folderName}
+              >
+                Migrate
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -469,9 +553,10 @@ export default function Home() {
             <div>
               <h2 className="text-lg font-semibold mb-8">Migration Result</h2>
               <p className="mb-2">The NFT data has been migrated.</p>
+              <p className="mb-2">Please set the below as baseURI in NFT Contract.</p>
               <p className="">
                 <a className="underline hover:text-gray-600" href={migrationResultURL}>
-                  {migrationResultURL}
+                  {migrationResultURL}/
                 </a>
               </p>
             </div>

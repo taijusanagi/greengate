@@ -19,7 +19,7 @@ const { chains, publicClient } = configureChains(
 
 const { connectors } = getDefaultWallets({
   appName: "GreenGate",
-  projectId: "GreenGate",
+  projectId: "cffe9608a02c00c7947b9afd9dacbc70",
   chains,
 });
 
