@@ -2,6 +2,27 @@
 
 ![top](./docs/top.png)
 
+## Development
+
+## Pre-requisites of the project
+
+- Users must have a wallet connected to the Greenfield testnet and possess a small amount of its native token.
+
+## How to configure the project
+
+- Firstly, create your bucket on the Greenfield testnet using [DCellar](https://dcellar.io/). The bucket name you set will be utilized within the app.
+
+## How to run the project
+
+- You can access the live app directly, or run it locally with the following steps:
+
+```
+git clone https://github.com/taijusanagi/greengate
+cd greengate/app
+npm install
+npm run dev
+```
+
 ## Live App
 
 https://greengate.vercel.app/
