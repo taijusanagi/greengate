@@ -38,6 +38,21 @@ GreenGate simplifies the data migration process. Our automated system downloads 
 
 **Confirmation and Display:** Once the data migration is successful, users are presented with a confirmation modal. This modal displays the new baseURI for the migrated data, confirming its new location in Greenfield storage.
 
+### Reference
+
+#### Create Object Tx
+
+https://greenfieldscan.com/tx/0xe429ea855370efb451e55560fb02c4e619e1c8f8d1089513ab4802092772c210
+
+#### Migrated metadata
+
+https://gnfd-testnet-sp2.nodereal.io/view/test/test12/0
+
 ## Roadmap
 
 Our initial release supports NFT data migration from IPFS to Greenfield. However, we have plans to introduce tools for other data sources soon. The goal is to make GreenGate a comprehensive solution for all data migration needs to Greenfield storage.
+
+## Disclaimer
+
+- GreenGate currently supports only NFTs that utilize the ERC721Enumerable standard and are deployed on the BSCTestnet or opBNBTestnet.
+- The process of creating an object in Greenfield Storage is resource-intensive. To demonstrate the migration more efficiently, only one record is migrated at a time.
