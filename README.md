@@ -6,7 +6,11 @@
 
 https://greengate.vercel.app/
 
-## Demo
+## Pitch Deck
+
+https://docs.google.com/presentation/d/14emSiZJE9Odl98qmHjbZBNj6xcQkn6g_553p-cB0Wok/edit?usp=sharing
+
+## Demo Video
 
 Coming soon!
 
@@ -18,7 +22,7 @@ GreenGate is a data migration service designed primarily to transition data to t
 
 ### The Challenge:
 
-Migrating data between storage providers, especially to Greenfield, can be cumbersome. Typically, it involves a two-step process: downloading data from the original storage and then re-uploading it to the new one. This method is not just time-consuming but also requires manual oversight.
+Migrating data between storage providers, especially to Greenfield, can be time-consuming. Typically, it involves a two-step process: downloading data from the original storage and then re-uploading it to the new one.
 
 ### GreenGate's Answer:
 
