@@ -10,9 +10,9 @@
     "format": "npx prettier --write . --ignore-path .gitignore"
   },
   "dependencies": {
-    "@bnb-chain/greenfield-js-sdk": "^0.2.3",
-    "@bnb-chain/greenfield-zk-crypto": "^0.0.2-alpha.4",
-    "@bnb-chain/greenfiled-file-handle": "0.2.1-alpha.0",
+    "@bnb-chain/greenfield-js-sdk": "0.2.4",
+    "@bnb-chain/greenfield-zk-crypto": "0.0.2",
+    "@bnb-chain/greenfiled-file-handle": "0.2.1",
     "@rainbow-me/rainbowkit": "^1.0.9",
     "@types/node": "20.5.7",
     "@types/react": "18.2.21",

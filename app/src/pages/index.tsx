@@ -16,7 +16,7 @@ import { erc721EnumerableAbi } from "@/lib/abi";
 import { createPublicClient, http } from "viem";
 import { bscTestnet } from "wagmi/chains";
 import { opBNBTestnet } from "@/lib/network";
-import { client } from "@/lib/greenfield/utils/client";
+import { client, getAllSps } from "@/lib/greenfield/utils/client";
 import { useAccount } from "wagmi";
 import * as Handler from "@bnb-chain/greenfiled-file-handle";
 import { getOffchainAuthKeys } from "@/lib/greenfield/utils/offchainAuth";
@@ -222,8 +222,8 @@ export default function Home() {
       alert("No offchain, please create offchain pairs first");
       return;
     }
-    const bucketName = "test-for-create-bucket";
-    const objectName = "test";
+    const bucketName = "test";
+    const objectName = "test2";
     let jsonString = '{"name": "John", "age": 30, "city": "New York"}';
     let blob = new Blob([jsonString], { type: "application/json" });
     let file = new File([blob], "test", { type: "application/json" });
@@ -246,8 +246,8 @@ export default function Home() {
     const DEFAULT_SEGMENT_SIZE = 16 * 1024 * 1024;
     const DEFAULT_DATA_BLOCKS = 4;
     const DEFAULT_PARITY_BLOCKS = 2;
-    const handler = await (Handler as any).startRunningService("/file-handle.wasm");
-    const { contentLength, expectCheckSums } = await handler.getCheckSums(
+    // const handler = await (Handler as any).startRunningService("/file-handle.wasm");
+    const { contentLength, expectCheckSums } = await Handler.getCheckSums(
       bytes,
       DEFAULT_SEGMENT_SIZE,
       DEFAULT_DATA_BLOCKS,
@@ -255,21 +255,68 @@ export default function Home() {
     );
 
     debug.log("createObject");
-    const createObjectTx = await client.object.createObject({
-      bucketName: bucketName,
-      objectName: objectName,
-      creator: userAddress,
-      visibility: "VISIBILITY_TYPE_PUBLIC_READ",
-      fileType: file.type,
-      redundancyType: "REDUNDANCY_EC_TYPE",
-      contentLength,
-      expectCheckSums: JSON.parse(expectCheckSums),
-      signType: "offChainAuth", // Replace with actual sign type
-      domain: window.location.origin,
-      seedString: offChainData.seedString,
-    });
+
+    const spInfo = await getAllSps();
+    console.log(spInfo);
+    console.log({ contentLength, expectCheckSums });
+
+    // const createBucketTx = await client.bucket.createBucket({
+    //   bucketName: bucketName + "-add",
+    //   creator: userAddress,
+    //   visibility: "VISIBILITY_TYPE_PUBLIC_READ",
+    //   chargedReadQuota: "0",
+    //   spInfo: {
+    //     primarySpAddress: spInfo[0].address,
+    //   },
+    //   // paymentAddress: userAddress,
+    //   signType: "offChainAuth",
+    //   domain: window.location.origin,
+    //   seedString: offChainData.seedString,
+    // });
+    // console.log(createBucketTx);
+    const createObjectTx = await client.object.createObject(
+      {
+        bucketName: bucketName,
+        objectName: objectName,
+        creator: userAddress,
+        visibility: "VISIBILITY_TYPE_PUBLIC_READ",
+        fileType: file.type,
+        redundancyType: "REDUNDANCY_EC_TYPE",
+        contentLength,
+        expectCheckSums: JSON.parse(expectCheckSums),
+      },
+      {
+        type: "EDDSA",
+        domain: window.location.origin,
+        seed: offChainData.seedString,
+        address: userAddress,
+        // type: 'ECDSA',
+        // privateKey: ACCOUNT_PRIVATEKEY,
+      },
+    );
 
     console.log(createObjectTx);
+
+    const simulateInfo = await createObjectTx.simulate({
+      denom: "BNB",
+    });
+    console.log("simulateInfo", simulateInfo);
+
+    const res = await createObjectTx.broadcast({
+      denom: "BNB",
+      gasLimit: Number(simulateInfo?.gasLimit),
+      gasPrice: simulateInfo?.gasPrice || "5000000000",
+      payer: userAddress,
+      granter: "",
+    });
+
+    console.log("res", res);
+
+    if (res.code === 0) {
+      alert("create object tx success");
+    }
+
+    // console.log("simulateInfo", simulateInfo);
 
     return "http://localhost:3000";
   };
