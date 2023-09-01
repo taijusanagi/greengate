@@ -12,7 +12,7 @@ https://docs.google.com/presentation/d/14emSiZJE9Odl98qmHjbZBNj6xcQkn6g_553p-cB0
 
 ## Demo Video
 
-Coming soon!
+https://drive.google.com/file/d/10dD8YYjl6fqdnOB6WGOambfKGtfiD4we/view?usp=sharing
 
 ## Description
 
@@ -52,10 +52,6 @@ By leveraging these capabilities, GreenGate provides users a more efficient and 
 
 **Confirmation and Display:** Once the data migration is successful, users are presented with a confirmation modal. This modal displays the new baseURI for the migrated data, confirming its new location in Greenfield storage.
 
-## Deployment Pipeline
-
-![pipeline](./docs/pipeline.png)
-
 ### Reference
 
 #### Create Object Tx
@@ -64,7 +60,7 @@ https://greenfieldscan.com/tx/0xe429ea855370efb451e55560fb02c4e619e1c8f8d1089513
 
 #### Migrated metadata
 
-https://gnfd-testnet-sp2.nodereal.io/view/test/test12/0
+https://gnfd-testnet-sp2.nodereal.io/view/test/byac/0
 
 #### Sample NFT
 
@@ -76,9 +72,18 @@ https://opbnbscan.com/address/0x0E2487584BE1c002654ccFfE17d6391a88C1e72A
 
 https://testnet.bscscan.com/address/0x0E2487584BE1c002654ccFfE17d6391a88C1e72A
 
+## Deployment Pipeline
+
+![pipeline](./docs/pipeline.png)
+
+## Developer Experience
+
+- GreenGate is powered by the Greenfield Chain JS SDK version 2.4.0, ensuring compatibility with the chain updates made on August 31st.
+- The development journey was challenging, but it provided invaluable experience.
+
 ## Roadmap
 
-Our initial release supports NFT data migration from IPFS to Greenfield. However, we have plans to introduce tools for other data sources soon. The goal is to make GreenGate a comprehensive solution for all data migration needs to Greenfield storage.
+Our initial release supports NFT data migration from IPFS to Greenfield. However, we have plans to introduce tools for other data sources and other data format soon. The goal is to make GreenGate a comprehensive solution for all data migration needs to Greenfield storage.
 
 ## Disclaimer
 
